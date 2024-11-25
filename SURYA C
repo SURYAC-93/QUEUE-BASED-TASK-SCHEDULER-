@@ -1,0 +1,113 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// Define a structure for a task
+typedef struct Task {
+    void (*function)(void*); // Function pointer for the task
+    void* param;             // Parameter for the function
+} Task;
+
+// Define a structure for a queue node
+typedef struct Node {
+    Task task;
+    struct Node* next;
+} Node;
+
+// Define a structure for the task queue
+typedef struct Queue {
+    Node* front;
+    Node* rear;
+} Queue;
+
+// Initialize the queue
+void initQueue(Queue* q) {
+    q->front = q->rear = NULL;
+}
+
+// Check if the queue is empty
+int isEmpty(Queue* q) {
+    return q->front == NULL;
+}
+
+// Enqueue a task
+void enqueue(Queue* q, Task task) {
+    Node* temp = (Node*)malloc(sizeof(Node));
+    if (!temp) {
+        fprintf(stderr, "Memory allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    temp->task = task;
+    temp->next = NULL;
+
+    if (isEmpty(q)) {
+        q->front = q->rear = temp;
+    } else {
+        q->rear->next = temp;
+        q->rear = temp;
+    }
+}
+
+// Dequeue a task
+Task dequeue(Queue* q) {
+    if (isEmpty(q)) {
+        fprintf(stderr, "Queue is empty\n");
+        exit(EXIT_FAILURE);
+    }
+    Node* temp = q->front;
+    Task task = temp->task;
+    q->front = q->front->next;
+
+    if (q->front == NULL) {
+        q->rear = NULL;
+    }
+
+    free(temp);
+    return task;
+}
+
+// Task scheduler function
+void runScheduler(Queue* q) {
+    while (!isEmpty(q)) {
+        Task task = dequeue(q);
+        task.function(task.param); // Execute the task
+    }
+}
+
+// Example task functions
+void task1(void* param) {
+    printf("Task 1 executed with parameter: %s\n", (char*)param);
+}
+
+void task2(void* param) {
+    printf("Task 2 executed with parameter: %d\n", *(int*)param);
+}
+
+void task3(void* param) {
+    printf("Task 3 executed with parameter: %.2f\n", *(double*)param);
+}
+
+// Main function
+int main() {
+    Queue q;
+    initQueue(&q);
+
+    // Create tasks and enqueue them
+    char* param1 = "Hello, World!";
+    Task t1 = {task1, param1};
+    enqueue(&q, t1);
+
+    int param2 = 42;
+    Task t2 = {task2, &param2};
+    enqueue(&q, t2);
+
+    double param3 = 3.14;
+    Task t3 = {task3, &param3};
+    enqueue(&q, t3);
+
+    // Run the scheduler
+    printf("Starting task scheduler...\n");
+    runScheduler(&q);
+    printf("Task scheduler finished.\n");
+
+    return 0;
+}
